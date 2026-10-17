@@ -1,0 +1,584 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Rapport micro-centre</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one mobile-first column of numbered steps, sticky status bar at the bottom (écart + alertes + envoi) */
+:root{
+  --bg:#f2f4f7; --surface:#ffffff; --soft:#eaeef4; --ink:#152231; --muted:#5a6879; --line:#d6dde6;
+  --accent:#c2410c; --accent-ink:#ffffff; --ok:#15803d; --warn:#a16207; --err:#b91c1c;
+  --ok-bg:#e8f5ec; --warn-bg:#fdf3dc; --err-bg:#fbe7e7;
+  --f-display:"Archivo",system-ui,sans-serif; --f-body:"Public Sans",system-ui,sans-serif; --f-num:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e151e; --surface:#16202c; --soft:#1d2a38; --ink:#e5ecf4; --muted:#9aa8b9; --line:#2b3848;
+  --accent:#f97316; --accent-ink:#1a0d03; --ok:#4ade80; --warn:#fbbf24; --err:#f87171;
+  --ok-bg:#12301f; --warn-bg:#352a0e; --err-bg:#3a1717; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e151e; --surface:#16202c; --soft:#1d2a38; --ink:#e5ecf4; --muted:#9aa8b9; --line:#2b3848;
+  --accent:#f97316; --accent-ink:#1a0d03; --ok:#4ade80; --warn:#fbbf24; --err:#f87171;
+  --ok-bg:#12301f; --warn-bg:#352a0e; --err-bg:#3a1717; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 140px}
+header{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+h1{font-family:var(--f-display);font-size:1.6rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:.9rem}
+.tabs{display:flex;gap:6px;margin:12px 0 16px}
+.tab{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px;border-radius:8px;font:600 .95rem var(--f-body);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.banner{border-radius:8px;padding:10px 12px;font-size:.9rem;margin-bottom:12px;background:var(--warn-bg);color:var(--ink);border:1px solid var(--line)}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
+h2{font-family:var(--f-display);font-size:1.05rem;margin:0;display:flex;align-items:center;gap:8px}
+h2 .n{font-family:var(--f-num);font-size:.8rem;background:var(--soft);color:var(--muted);border-radius:6px;padding:2px 7px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+.grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:520px){.grid.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:0}
+input,select,textarea{font:400 1rem var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;width:100%;min-width:0}
+input.num{font-family:var(--f-num)}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+textarea{min-height:70px;resize:vertical}
+.calc{font-family:var(--f-num);background:var(--soft);border-radius:7px;padding:9px 10px;font-size:1rem;min-height:40px;display:flex;align-items:center}
+.row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,.9fr) 34px;gap:8px;align-items:end}
+.row.two{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 34px}
+.row.three{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.9fr) 34px}
+@media (max-width:520px){
+  .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px}
+  .row .line-client{grid-column:1 / 3}
+  .row .line-total{grid-column:1 / 3}
+}
+.del{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:7px;height:40px;cursor:pointer;font-size:1.1rem}
+.add{align-self:flex-start;border:1px dashed var(--line);background:transparent;color:var(--ink);border-radius:7px;padding:8px 12px;font:600 .9rem var(--f-body);cursor:pointer}
+.hint{font-size:.83rem;color:var(--muted)}
+.toggle{display:flex;flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--ink);font-weight:600}
+.toggle input{width:20px;height:20px}
+.totals{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:.95rem}
+.totals .v{font-family:var(--f-num);text-align:right;font-variant-numeric:tabular-nums}
+.totals .big{font-weight:700;font-size:1.05rem}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checks li{border-radius:7px;padding:8px 10px;font-size:.9rem;display:flex;gap:8px;align-items:flex-start}
+.checks li b{font-family:var(--f-num);font-size:.75rem;padding:1px 6px;border-radius:4px;flex:none;margin-top:2px}
+.c-err{background:var(--err-bg)} .c-err b{background:var(--err);color:var(--surface)}
+.c-warn{background:var(--warn-bg)} .c-warn b{background:var(--warn);color:var(--surface)}
+.c-ok{background:var(--ok-bg)} .c-ok b{background:var(--ok);color:var(--surface)}
+pre.wa{white-space:pre-wrap;word-break:break-word;font-family:var(--f-num);font-size:.82rem;background:var(--soft);border-radius:8px;padding:12px;margin:0;max-height:360px;overflow:auto}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:0;border-radius:8px;padding:11px 16px;font:600 .95rem var(--f-body);cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.sec{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-top:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{font-family:var(--f-num);font-size:.85rem;padding:5px 9px;border-radius:999px;background:var(--soft)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.err{background:var(--err-bg);color:var(--err)}
+.bar .btn{margin-left:auto;padding:9px 14px}
+.msg{font-size:.9rem;border-radius:8px;padding:10px 12px}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+.hrow .t{font-weight:600}
+.hrow .m{color:var(--muted);font-size:.85rem;font-family:var(--f-num)}
+.hrow .r{text-align:right}
+.empty{color:var(--muted);text-align:center;padding:30px 10px;border:1px dashed var(--line);border-radius:10px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <h1>Rapport journalier du micro-centre</h1>
+    <div class="sub">30 Minutes Multi-Services · un format unique, les calculs et les contrôles sont faits pour vous.</div>
+  </header>
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-form" role="tab" aria-selected="true">Nouveau rapport</button>
+    <button class="tab" id="tab-hist" role="tab" aria-selected="false">Mes rapports</button>
+    <button class="tab" id="tab-prix" role="tab" aria-selected="false">Prix</button>
+  </div>
+  <div id="dbBanner" class="banner">Version téléphone du 17/10/2026 (prix du 16/10 : 350 HTG, tap-tap 325, livraison client 375, Pyrogaz 350). Remplissez le rapport, corrigez les erreurs, puis appuyez sur « Copier le texte WhatsApp » et collez-le dans le groupe. Le téléphone garde vos derniers rapports pour contrôler l'ouverture du lendemain.</div>
+
+  <div id="view-form">
+    <form id="f" autocomplete="off" novalidate></form>
+  </div>
+
+  <div id="view-prix" hidden>
+    <section class="card"><h2>Prix en vigueur</h2>
+      <div class="hint" id="prixInfo">Prix appliqués aujourd'hui dans le formulaire.</div>
+      <div class="totals" id="prixNow"></div>
+    </section>
+    <section class="card" id="prixEdit" hidden><h2>Changer les prix</h2>
+      <div class="hint" id="prixWho">Les nouveaux prix s'appliquent aux rapports datés à partir du jour choisi. Les rapports plus anciens gardent les prix de leur date.</div>
+      <div class="grid">
+        <label>À partir du<input type="date" id="pFrom"></label><span></span>
+      </div>
+      <div class="grid" id="pFields"></div>
+      <div class="actions"><button type="button" class="btn" id="pSave">Enregistrer les nouveaux prix</button></div>
+      <div class="msg" id="pMsg" hidden></div>
+    </section>
+    <section class="card"><h2>Historique des prix</h2><div class="hist" id="prixHist"></div></section>
+  </div>
+
+  <div id="view-hist" hidden>
+    <div class="grid" style="margin-bottom:10px">
+      <label>Point de vente<select id="hSite"></select></label>
+      <label>&nbsp;<button type="button" class="btn sec" id="hRefresh">Actualiser</button></label>
+    </div>
+    <div id="hist" class="hist"><div class="empty">Chargement de l'historique…</div></div>
+  </div>
+</div>
+
+<div class="bar" id="bar">
+  <div class="bar-in">
+    <span class="pill" id="pEcart">Écart —</span>
+    <span class="pill" id="pChecks">Contrôles —</span>
+    <button class="btn" id="goCheck" type="button">Vérifier et copier</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- Référentiel ---------- */
+const SITES={
+  LA:{name:"Lalue",cap:2000,tanks:1,price:350,emoji:"🟪",water:true,supplier:"Wingaz"},
+  TA:{name:"Delmas 31",cap:1000,tanks:1,price:350,emoji:"🟦",supplier:"Haiti Propane"},
+  TB:{name:"Delmas 33",cap:1000,tanks:1,price:350,emoji:"🟫",supplier:"Haiti Propane"},
+  FA:{name:"Faustin 1er",cap:1000,tanks:2,price:350,emoji:"🟩",water:true,supplier:"Wingaz"},
+  RO:{name:"Rue Romain",cap:2000,tanks:1,price:350,emoji:"⬜",supplier:"Wingaz"},
+  LO:{name:"Lorie Ange",cap:1000,tanks:1,price:350,emoji:"⬛",supplier:"Wingaz"},
+  VA:{name:"Vaillant",cap:1000,tanks:1,price:350,emoji:"🟨",supplier:"Wingaz"},
+  JA:{name:"Rue Jasmin",cap:1000,tanks:1,price:350,emoji:"🟧",supplier:"Wingaz"}
+};
+const CATS=["Sur place","Tap-tap","Pyrogaz","Livraison client","Carburant 30 Minutes"];
+const TOL_CAISSE=150;
+const PRICE_DEFAULT={from:"2000-01-01",sites:{LA:340,TA:325,TB:325,FA:325,RO:325,LO:325,VA:350,JA:325},tap:300,pyro:320,eau:250};
+const BUILTIN_SETS=[{from:"2026-10-15",sites:{LA:340,TA:325,TB:325,FA:325,RO:325,LO:325,VA:350,JA:325},tap:300,pyro:350,livr:375,eau:250},{from:"2026-10-16",sites:{LA:350,TA:350,TB:350,FA:350,RO:350,LO:350,VA:350,JA:350},tap:325,pyro:350,livr:375,eau:250}];
+let priceSets=[PRICE_DEFAULT].concat(BUILTIN_SETS);
+function priceFor(date){const d=date||todayISO();const list=priceSets.filter(x=>x&&x.from&&x.from<=d).sort((a,b)=>a.from.localeCompare(b.from));return list.length?list[list.length-1]:PRICE_DEFAULT;}
+function catPrice(cat,site,date){let cd=null;try{cd=S.date;}catch(e){cd=null;}const P=priceFor(date||cd);if(cat==="Tap-tap")return z(P.tap)||300;if(cat==="Pyrogaz")return z(P.pyro)||320;if(cat==="Livraison client"&&z(P.livr))return P.livr;return (P.sites&&P.sites[site])||(SITES[site]?SITES[site].price:325);}
+function eauPrice(date){const P=priceFor(date);return z(P.eau)||250;}
+function withAutoPrices(fn){const before=S.lines.map(l=>String(catPrice(l.cat,S.site)));const eauBefore=String(eauPrice(S.date));fn();
+  S.lines.forEach((l,i)=>{if(!String(l.prix).trim()||l.prix===before[i])l.prix=String(catPrice(l.cat,S.site));});
+  if(!String(S.eau.prix).trim()||S.eau.prix===eauBefore)S.eau.prix=String(eauPrice(S.date));}
+
+/* ---------- Outils ---------- */
+const $=s=>document.querySelector(s);
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function num(v){if(v==null)return NaN;let s=String(v).trim().replace(/\s/g,"");if(!s)return NaN;
+  if(s.includes(",")&&s.includes("."))s=s.replace(/,/g,"");else s=s.replace(",",".");
+  const n=Number(s);return isFinite(n)?n:NaN;}
+const r2=n=>Math.round(n*100)/100;
+const ok=n=>!isNaN(n);
+const z=n=>ok(n)?n:0;
+function fmt(n){if(!ok(n))return "—";return n.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/[  ]/g," ");}
+function fmt0(n){if(!ok(n))return "—";return Math.round(n).toLocaleString("fr-FR").replace(/[  ]/g," ");}
+function todayISO(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
+function dateLabel(iso){try{return new Date(iso+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});}catch(e){return iso;}}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function load(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+
+/* ---------- État ---------- */
+function defaultLines(site){return [{cat:"Sur place",client:"",gal:"",prix:site?String(catPrice("Sur place",site)):""}].concat(site==="LA"?[{cat:"Tap-tap",client:"",gal:"",prix:String(catPrice("Tap-tap",site))}]:[]);}
+function blank(keep){
+  const site=(keep&&keep.site)||"";
+  return {date:todayISO(),site,vendeur:(keep&&keep.vendeur)||"",pompiste:(keep&&keep.pompiste)||"",
+    meterOpen:"",meterClose:"",j:{c1d:"",c1f:"",c2d:"",c2f:""},
+    lines:defaultLines(site),
+    eau:{on:!!(site&&SITES[site].water),stock:"",vendus:"",prix:String(eauPrice()),pc:""},acc:"",
+    recouv:[],credits:[],loyalty:"",comp:{montant:"",motif:""},dep:[],cashout:[],
+    liv:{on:false,fournisseur:site?SITES[site].supplier:"Wingaz",bl:"",camion:"",chauffeur:"",mAv:"",mAp:"",citerne:"C1",jAv:"",jAp:"",pay:"",rem:"",temp:""},
+    remis:"",comment:""};
+}
+let S=blank(load("rmc_prefs"));
+let prev=null, sameDay=null, db=null, me=null, saving=false, view="form";
+
+/* ---------- Calculs ---------- */
+function calc(){
+  const site=SITES[S.site]; const cap=site?site.cap:1000; const two=site&&site.tanks===2;
+  const open=num(S.meterOpen), close=num(S.meterClose);
+  const sortie=ok(open)&&ok(close)?r2(close-open):NaN;
+  const lines=S.lines.map(l=>{const g=num(l.gal),p=num(l.prix);return {cat:l.cat,client:l.client,gal:g,prix:p,total:ok(g)&&ok(p)?r2(g*p):NaN};});
+  const linesGal=r2(lines.reduce((a,l)=>a+z(l.gal),0));
+  const propane=r2(lines.reduce((a,l)=>a+z(l.total),0));
+  const carb=r2(lines.filter(l=>l.cat==="Carburant 30 Minutes").reduce((a,l)=>a+z(l.total),0));
+  const eauV=S.eau.on?num(S.eau.vendus):NaN, eauP=num(S.eau.prix), eauS=num(S.eau.stock);
+  const eau=S.eau.on&&ok(eauV)&&ok(eauP)?r2(eauV*eauP):0;
+  const eauRest=S.eau.on&&ok(eauS)&&ok(eauV)?r2(eauS-eauV):NaN;
+  const acc=z(num(S.acc));
+  const ventes=r2(propane+eau+acc);
+  const recEsp=r2(S.recouv.filter(r=>r.mode==="Espèces").reduce((a,r)=>a+z(num(r.montant)),0));
+  const recAut=r2(S.recouv.filter(r=>r.mode!=="Espèces").reduce((a,r)=>a+z(num(r.montant)),0));
+  const credits=r2(S.credits.reduce((a,c)=>a+z(num(c.montant)),0));
+  const loyalty=z(num(S.loyalty)), comp=z(num(S.comp.montant));
+  const dep=r2(S.dep.reduce((a,d)=>a+z(num(d.montant)),0));
+  const cashout=r2(S.cashout.reduce((a,c)=>a+z(num(c.montant)),0));
+  const attendu=r2(ventes+recEsp-loyalty-comp-credits-dep-carb-cashout);
+  const remis=num(S.remis); const ecart=ok(remis)?r2(remis-attendu):NaN;
+  const J={c1d:num(S.j.c1d),c1f:num(S.j.c1f),c2d:num(S.j.c2d),c2f:num(S.j.c2f)};
+  const jd=two?J.c1d+J.c2d:J.c1d, jf=two?J.c1f+J.c2f:J.c1f;
+  const livGal=S.liv.on?r2(z(num(S.liv.pay))+z(num(S.liv.rem))):0;
+  const jaugeSortie=ok(jd)&&ok(jf)?r2((jd-jf)*cap/100+livGal):NaN;
+  const stockGal=ok(jf)?r2(jf*cap/100):NaN;
+  const jours=ok(stockGal)&&ok(sortie)&&sortie>0?r2(stockGal/sortie):NaN;
+  return {site,cap,two,open,close,sortie,lines,linesGal,propane,carb,eau,eauV,eauRest,acc,ventes,recEsp,recAut,credits,loyalty,comp,dep,cashout,attendu,remis,ecart,J,livGal,jaugeSortie,stockGal,jours};
+}
+
+/* ---------- Contrôles ---------- */
+function checks(c){
+  const E=[],W=[],O=[]; const e=m=>E.push(m), w=m=>W.push(m), o=m=>O.push(m);
+  if(!S.site)e("Choisissez le point de vente.");
+  if(!S.date)e("Indiquez la date du rapport.");
+  else if(S.date>todayISO())e("La date du rapport est dans le futur.");
+  if(!S.vendeur.trim())e("Indiquez le nom du vendeur ou de la vendeuse.");
+  if(!ok(c.open)||!ok(c.close))e("Saisissez le compteur d'ouverture et de fermeture.");
+  else if(c.close<c.open)e("Le compteur de fermeture est plus petit que l'ouverture.");
+  else o(`Sortie au compteur : ${fmt(c.sortie)} gal.`);
+  const jk=c.two?["c1d","c1f","c2d","c2f"]:["c1d","c1f"];
+  if(jk.some(k=>!ok(c.J[k])))e("Saisissez la jauge de début et de fin"+(c.two?" des deux citernes.":"."));
+  else if(jk.some(k=>c.J[k]<0||c.J[k]>100))e("Une jauge doit être entre 0 et 100 %.");
+  c.lines.forEach((l,i)=>{ if(!ok(l.gal)||!ok(l.prix))e(`Ligne de vente ${i+1} : gallons ou prix manquant.`);
+    else if(S.site){const ref=catPrice(l.cat,S.site); if(Math.abs(l.prix-ref)>0.001)w(`Ligne ${i+1} (${l.cat}) : prix ${fmt0(l.prix)} au lieu du prix de référence ${fmt0(ref)}. Expliquez en commentaire si c'est voulu.`);}
+    if(l.cat==="Livraison client"&&!l.client.trim())e(`Ligne ${i+1} : indiquez le nom du client livré.`);
+  });
+  if(ok(c.sortie)&&c.lines.length){const d=r2(c.linesGal-c.sortie);
+    if(Math.abs(d)>0.05)e(`Les gallons des lignes de vente (${fmt(c.linesGal)}) ne correspondent pas au compteur (${fmt(c.sortie)}). Écart : ${fmt(d)} gal.`);
+    else o("Les gallons vendus correspondent au compteur.");}
+  if(S.eau.on&&ok(c.eauRest)&&c.eauRest<0)e("Eau : plus de gallons vendus que de stock.");
+  S.credits.forEach((x,i)=>{if(ok(num(x.montant))&&!x.client.trim())e(`Crédit ${i+1} : indiquez le nom du client.`);});
+  S.recouv.forEach((x,i)=>{if(ok(num(x.montant))&&!x.client.trim())e(`Recouvrement ${i+1} : indiquez le nom du client.`);});
+  S.dep.forEach((x,i)=>{if(ok(num(x.montant))&&!x.lib.trim())e(`Dépense ${i+1} : indiquez la nature de la dépense.`);if(ok(num(x.montant))&&!String(x.bon||"").trim())e(`Dépense ${i+1} : numéro du bon signé obligatoire.`);});
+  S.cashout.forEach((x,i)=>{if(ok(num(x.montant))&&!String(x.nom||"").trim())e(`Cash out ${i+1} : indiquez le bénéficiaire.`);if(ok(num(x.montant))&&!String(x.bon||"").trim())e(`Cash out ${i+1} : numéro du bon signé obligatoire.`);});
+  if(ok(num(S.comp.montant))&&num(S.comp.montant)>0&&!S.comp.motif.trim())e("Compensation : indiquez le client et le motif.");
+  // Pyrogaz sans crédit
+  const pyro=r2(c.lines.filter(l=>l.cat==="Pyrogaz").reduce((a,l)=>a+z(l.total),0));
+  if(pyro>0){const cr=r2(S.credits.filter(x=>/pyro/i.test(x.client)).reduce((a,x)=>a+z(num(x.montant)),0));
+    if(Math.abs(cr-pyro)>0.5)w(`Vente Pyrogaz ${fmt(pyro)} HTG, mais crédit Pyrogaz inscrit ${fmt(cr)} HTG. Vérifiez (normalement à crédit).`);}
+  if(c.ventes>0&&c.loyalty/c.ventes>0.05)w(`Loyalty élevé : ${fmt0(c.loyalty)} HTG, soit ${(c.loyalty/c.ventes*100).toFixed(1)} % des ventes.`);
+  if(c.cashout>0)w("Cash out payé au point : la règle est de payer à J+1 sur la recette globale, avec un bon signé.");
+  if(!ok(c.remis))e("Saisissez l'encaisse remise.");
+  else if(Math.abs(c.ecart)>TOL_CAISSE)w(`Écart de caisse ${fmt(c.ecart)} HTG, au-delà de la tolérance de ${TOL_CAISSE} HTG. Recomptez avant d'envoyer.`);
+  else o(`Écart de caisse ${fmt(c.ecart)} HTG, dans la tolérance.`);
+  // Jauge vs compteur
+  if(ok(c.jaugeSortie)&&ok(c.sortie)){const d=r2(c.jaugeSortie-c.sortie), tol=Math.max(30,c.cap*0.04);
+    if(Math.abs(d)>tol)w(`La jauge indique ${fmt0(c.jaugeSortie)} gal sortis${S.liv.on?" (livraison comprise)":""}, le compteur ${fmt0(c.sortie)} gal. Écart ${fmt0(d)} gal : relisez la jauge.`);
+    else o("Jauge cohérente avec le compteur.");}
+  // Ouverture vs veille
+  if(prev&&ok(c.open)){const pc=num(prev.form.meterClose);
+    if(ok(pc)&&Math.abs(pc-c.open)>0.01)w(`Ouverture ${fmt(c.open)} ≠ fermeture du ${prev.form.date} (${fmt(pc)}). Écart ${fmt(c.open-pc)} gal pendant la nuit.`);
+    else if(ok(pc))o(`Ouverture = fermeture du ${prev.form.date}.`);
+    const pj=prev.form.j||{}; const pairs=c.two?[["c1d","c1f","C1"],["c2d","c2f","C2"]]:[["c1d","c1f",""]];
+    pairs.forEach(([d,f,lab])=>{const pf=num(pj[f]);
+      if(ok(pf)&&ok(c.J[d])&&Math.abs(pf-c.J[d])>3)w(`Jauge début${lab?" "+lab:""} ${c.J[d]} % alors qu'elle était à ${pf} % à la fermeture du ${prev.form.date}. Valeur recopiée ?`);});
+  } else if(S.site&&!prev&&db)o("Pas de rapport précédent enregistré pour ce point : le contrôle d'ouverture n'est pas possible.");
+  // Livraison
+  if(S.liv.on){const L=S.liv, pay=num(L.pay), rem=z(num(L.rem)), jav=num(L.jAv), jap=num(L.jAp), mav=num(L.mAv), map=num(L.mAp);
+    if(!L.bl.trim())e("Livraison : numéro de BL manquant.");
+    if(!ok(pay))e("Livraison : gallons payants manquants.");
+    if(!ok(jav)||!ok(jap))e("Livraison : jauge avant et après obligatoires.");
+    if(!L.chauffeur.trim()||/^\?+$/.test(L.chauffeur.trim()))w("Livraison : nom du chauffeur non indiqué.");
+    if(!L.camion.trim())w("Livraison : plaque du camion non indiquée.");
+    if(ok(mav)&&ok(map)&&Math.abs(map-mav)>0.01)w(`Livraison : ${fmt(map-mav)} gal vendus pendant le dépotage (compteur avant ≠ après).`);
+    if(ok(mav)&&ok(c.open)&&ok(c.close)&&(mav<c.open-0.01||mav>c.close+0.01))e("Livraison : le compteur avant livraison doit être entre l'ouverture et la fermeture.");
+    if(ok(pay)&&ok(jav)&&ok(jap)){const during=ok(mav)&&ok(map)?Math.max(0,map-mav):0;const exp=(pay+rem-during)/c.cap*100, d=r2((jap-jav)-exp);
+      if(Math.abs(d)>4)w(`Livraison : la jauge monte de ${r2(jap-jav)} points pour ${fmt0(pay+rem)} gal (attendu ≈ ${r2(exp)} points, ventes pendant le dépotage déduites).`);
+      else o("Livraison : hausse de jauge cohérente avec la quantité.");}
+    if(ok(jav)&&ok(mav)&&ok(c.open)){let base=NaN;
+      if(c.two){base=S.liv.citerne==="C2"?c.J.c2d:c.J.c1d;}
+      else base=c.J.c1d;
+      if(!c.two&&ok(base)){const exp=base-(mav-c.open)/c.cap*100;
+        if(Math.abs(jav-exp)>5)w(`Livraison : jauge avant ${jav} % alors que le calcul donne ≈ ${r2(exp)} % (jauge de début moins les ventes avant livraison). Possible livraison non déclarée ou lecture fausse.`);}}
+    const t=num(L.temp); if(ok(t)&&t>28)w(`Température ${t} °C : vérifier que le ticket du camion est compensé en température.`);
+  }
+  if(ok(c.jours)&&c.jours<3)w(`Stock de fin ≈ ${fmt0(c.stockGal)} gal, soit ${c.jours.toFixed(1)} jours de vente : signalez-le pour commande.`);
+  if(sameDay)o(`Un rapport existe déjà pour ce point et cette date (version ${sameDay.version||1}). L'envoi le remplacera par une version corrigée.`);
+  return {E,W,O};
+}
+
+/* ---------- Texte WhatsApp ---------- */
+function waText(c,k){
+  const s=c.site||{name:"?",emoji:"▪️"}; const L=[]; const p=x=>L.push(x);
+  if(sameDay)p(`CORRECTION (version ${(sameDay.version||1)+1})`);
+  p(`${s.emoji} Rapport du ${dateLabel(S.date)} / MC ${s.name} ${s.emoji}`);
+  p(`Vendeur(se) : ${S.vendeur||"—"}`); if(S.pompiste)p(`Pompiste : ${S.pompiste}`);
+  p("");p("— COMPTEUR —");p(`Ouverture : ${fmt(c.open)}`);p(`Fermeture : ${fmt(c.close)}`);p(`Sortie : ${fmt(c.sortie)} gal`);
+  p("");p("— JAUGE —");
+  if(c.two){p(`C1 : ${S.j.c1d||"—"} % → ${S.j.c1f||"—"} %`);p(`C2 : ${S.j.c2d||"—"} % → ${S.j.c2f||"—"} %`);} else p(`Début : ${S.j.c1d||"—"} % → Fin : ${S.j.c1f||"—"} %`);
+  if(S.liv.on){const V=S.liv;p("");p("— RÉCEPTION DE GAZ —");p(`Fournisseur : ${V.fournisseur}`);p(`BL : ${V.bl||"—"} · Camion : ${V.camion||"—"} · Chauffeur : ${V.chauffeur||"—"}`);
+    p(`Compteur avant / après : ${fmt(num(V.mAv))} / ${fmt(num(V.mAp))}`);
+    p(`Jauge avant → après${c.two?" ("+V.citerne+")":""} : ${V.jAv||"—"} % → ${V.jAp||"—"} %`);
+    p(`Reçu : ${fmt(num(V.pay))} gal payants${z(num(V.rem))?" + "+fmt(num(V.rem))+" gal de remise":""}`);if(V.temp)p(`Température : ${V.temp} °C`);}
+  p("");p("— VENTES —");
+  c.lines.forEach(l=>p(`${l.cat}${l.client?" ("+l.client+")":""} : ${fmt(l.gal)} gal × ${fmt0(l.prix)} = ${fmt(l.total)}`));
+  if(S.eau.on)p(`Eau Culligan : ${S.eau.vendus||0} gal × ${fmt0(num(S.eau.prix))} = ${fmt(c.eau)} (stock ${S.eau.stock||"—"} → ${ok(c.eauRest)?c.eauRest:"—"})${z(num(S.eau.pc))?" · "+S.eau.pc+" payé(s) par la petite caisse":""}`);
+  if(c.acc)p(`Accessoires : ${fmt(c.acc)}`);
+  p(`Total ventes : ${fmt(c.ventes)} HTG`);
+  if(S.recouv.length){p("");p("— RECOUVREMENTS —");S.recouv.forEach(r=>p(`${r.client||"—"} : ${fmt(num(r.montant))} (${r.mode})`));}
+  if(S.credits.length){p("");p("— CRÉDITS (À RECEVOIR) —");S.credits.forEach(x=>p(`${x.client||"—"} : ${fmt(num(x.montant))}`));}
+  p("");p("— PAIEMENTS NON EN ESPÈCES / DÉDUCTIONS —");
+  p(`Loyalty : ${fmt(c.loyalty)}`);
+  if(c.comp)p(`Compensation : ${fmt(c.comp)} (${S.comp.motif||"—"})`);
+  if(c.carb)p(`Carburant véhicule 30 Minutes : ${fmt(c.carb)}`);
+  S.dep.forEach(d=>p(`Dépense ${d.lib||"—"} : ${fmt(num(d.montant))} (bon ${d.bon||"—"})`));
+  S.cashout.forEach(x=>p(`Cash out ${x.nom||"—"} : ${fmt(num(x.montant))} (bon ${x.bon||"—"})`));
+  p("");p("— CAISSE —");p(`Encaisse attendue : ${fmt(c.attendu)} HTG`);p(`Encaisse remise : ${fmt(c.remis)} HTG`);p(`Écart : ${fmt(c.ecart)} HTG`);
+  p("");p(`— CONTRÔLE — ${k.E.length?"❌ "+k.E.length+" erreur(s)":k.W.length?"⚠️ "+k.W.length+" alerte(s)":"✅ aucun écart"}`);
+  k.W.forEach(x=>p("⚠️ "+x));
+  if(S.comment.trim()){p("");p("Commentaire : "+S.comment.trim());}
+  return L.join("\n");
+}
+
+/* ---------- Rendu du formulaire ---------- */
+function inp(k,v,opt){opt=opt||{};return `<input ${opt.num?'class="num" inputmode="decimal"':''} data-k="${k}" id="i-${k.replace(/\./g,'-')}" value="${esc(v)}" ${opt.ph?`placeholder="${esc(opt.ph)}"`:""} ${opt.type?`type="${opt.type}"`:""}>`;}
+function renderForm(){
+  const site=SITES[S.site]; const two=site&&site.tanks===2;
+  const siteOpts=`<option value="">— Choisir —</option>`+Object.keys(SITES).map(k=>`<option value="${k}" ${S.site===k?"selected":""}>${esc(SITES[k].name)}</option>`).join("");
+  const lines=S.lines.map((l,i)=>`<div class="row">
+      <label>Type<select data-k="lines.${i}.cat" id="i-lines-${i}-cat">${CATS.map(c=>`<option ${c===l.cat?"selected":""}>${c}</option>`).join("")}</select></label>
+      <label>Gallons${inp(`lines.${i}.gal`,l.gal,{num:1})}</label>
+      <label>Prix${inp(`lines.${i}.prix`,l.prix,{num:1})}</label>
+      <label class="line-total">Total<div class="calc" data-out="line${i}">—</div></label>
+      <button type="button" class="del" data-del="lines.${i}" aria-label="Supprimer la ligne">×</button>
+      ${(l.cat==="Pyrogaz"||l.cat==="Livraison client")?`<label class="line-client" style="grid-column:1/-1">Client livré${inp(`lines.${i}.client`,l.client,{ph:l.cat==="Pyrogaz"?"Pyrogaz (site / cantine)":"Nom du client"})}</label>`:""}
+    </div>`).join("");
+  const list=(arr,key,fields)=>arr.map((x,i)=>`<div class="row ${fields.length===3?"three":"two"}">${fields.map(f=>f.sel?`<label>${f.lab}<select data-k="${key}.${i}.${f.k}" id="i-${key}-${i}-${f.k}">${f.sel.map(o=>`<option ${o===x[f.k]?"selected":""}>${o}</option>`).join("")}</select></label>`:`<label>${f.lab}${inp(`${key}.${i}.${f.k}`,x[f.k],{num:f.num,ph:f.ph})}</label>`).join("")}<button type="button" class="del" data-del="${key}.${i}" aria-label="Supprimer">×</button></div>`).join("");
+  $("#f").innerHTML=`
+  <section class="card"><h2><span class="n">1</span>Identification</h2>
+    <div class="grid">
+      <label>Date${inp("date",S.date,{type:"date"})}</label>
+      <label>Point de vente<select data-k="site" id="i-site">${siteOpts}</select></label>
+      <label>Vendeur / vendeuse${inp("vendeur",S.vendeur,{ph:"Nom"})}</label>
+      <label>Pompiste${inp("pompiste",S.pompiste,{ph:"Nom (si différent)"})}</label>
+    </div></section>
+
+  <section class="card"><h2><span class="n">2</span>Compteur et jauge</h2>
+    <div class="grid g3">
+      <label>Compteur ouverture${inp("meterOpen",S.meterOpen,{num:1})}</label>
+      <label>Compteur fermeture${inp("meterClose",S.meterClose,{num:1})}</label>
+      <label>Sortie (gal)<div class="calc" data-out="sortie">—</div></label>
+    </div>
+    <div class="grid ${two?"":""}">
+      <label>Jauge début${two?" C1":""} (%)${inp("j.c1d",S.j.c1d,{num:1})}</label>
+      <label>Jauge fin${two?" C1":""} (%)${inp("j.c1f",S.j.c1f,{num:1})}</label>
+      ${two?`<label>Jauge début C2 (%)${inp("j.c2d",S.j.c2d,{num:1})}</label><label>Jauge fin C2 (%)${inp("j.c2f",S.j.c2f,{num:1})}</label>`:""}
+    </div>
+    <div class="hint" data-out="prevInfo"></div></section>
+
+  <section class="card"><h2><span class="n">3</span>Réception de gaz</h2>
+    <label class="toggle"><input type="checkbox" data-k="liv.on" id="i-liv-on" ${S.liv.on?"checked":""}> Il y a eu une livraison aujourd'hui</label>
+    ${S.liv.on?`<div class="grid">
+      <label>Fournisseur<select data-k="liv.fournisseur" id="i-liv-fournisseur">${["Wingaz","Haiti Propane","Autre"].map(o=>`<option ${o===S.liv.fournisseur?"selected":""}>${o}</option>`).join("")}</select></label>
+      <label>N° de BL${inp("liv.bl",S.liv.bl)}</label>
+      <label>Plaque du camion${inp("liv.camion",S.liv.camion)}</label>
+      <label>Chauffeur${inp("liv.chauffeur",S.liv.chauffeur,{ph:"Nom du chauffeur"})}</label>
+      <label>Compteur avant livraison${inp("liv.mAv",S.liv.mAv,{num:1})}</label>
+      <label>Compteur après livraison${inp("liv.mAp",S.liv.mAp,{num:1})}</label>
+      ${two?`<label>Citerne livrée<select data-k="liv.citerne" id="i-liv-citerne">${["C1","C2"].map(o=>`<option ${o===S.liv.citerne?"selected":""}>${o}</option>`).join("")}</select></label><span></span>`:""}
+      <label>Jauge avant (%)${inp("liv.jAv",S.liv.jAv,{num:1})}</label>
+      <label>Jauge après (%)${inp("liv.jAp",S.liv.jAp,{num:1})}</label>
+      <label>Gallons payants${inp("liv.pay",S.liv.pay,{num:1})}</label>
+      <label>Gallons de remise${inp("liv.rem",S.liv.rem,{num:1,ph:"0"})}</label>
+      <label>Température affichée (°C)${inp("liv.temp",S.liv.temp,{num:1})}</label>
+    </div><div class="hint">Lisez la jauge « après » au moins 1 h après le dépotage, et gardez le ticket du compteur du camion.</div>`:""}
+  </section>
+
+  <section class="card"><h2><span class="n">4</span>Ventes</h2>
+    ${lines||'<div class="hint">Ajoutez au moins une ligne de vente.</div>'}
+    <button type="button" class="add" data-add="lines">+ Ajouter une ligne de vente</button>
+    <div class="hint">Une ligne par type de vente. Le carburant des véhicules de 30 Minutes se saisit ici et est déduit automatiquement de la caisse.</div>
+    <label class="toggle"><input type="checkbox" data-k="eau.on" id="i-eau-on" ${S.eau.on?"checked":""}> Eau Culligan</label>
+    ${S.eau.on?`<div class="grid">
+      <label>Stock début (gal)${inp("eau.stock",S.eau.stock,{num:1})}</label>
+      <label>Gallons vendus${inp("eau.vendus",S.eau.vendus,{num:1})}</label>
+      <label>Prix${inp("eau.prix",S.eau.prix,{num:1})}</label>
+      <label>Dont payés par la petite caisse${inp("eau.pc",S.eau.pc,{num:1,ph:"0"})}</label>
+      <label>Total eau<div class="calc" data-out="eau">—</div></label>
+      <label>Stock restant<div class="calc" data-out="eauRest">—</div></label>
+    </div>`:""}
+    <div class="grid"><label>Accessoires vendus (HTG)${inp("acc",S.acc,{num:1,ph:"0"})}</label><label>Total ventes<div class="calc" data-out="ventes">—</div></label></div>
+  </section>
+
+  <section class="card"><h2><span class="n">5</span>Crédits et recouvrements</h2>
+    <div class="hint">Crédit = client servi sans payer (à recevoir). Recouvrement = client qui rembourse une dette.</div>
+    ${list(S.credits,"credits",[{k:"client",lab:"Client à crédit",ph:"Nom"},{k:"montant",lab:"Montant",num:1}])}
+    <button type="button" class="add" data-add="credits">+ Ajouter un crédit</button>
+    ${list(S.recouv,"recouv",[{k:"client",lab:"Client qui paie",ph:"Nom"},{k:"montant",lab:"Montant",num:1},{k:"mode",lab:"Mode",sel:["Espèces","Chèque","Virement"]}])}
+    <button type="button" class="add" data-add="recouv">+ Ajouter un recouvrement</button>
+  </section>
+
+  <section class="card"><h2><span class="n">6</span>Paiements non en espèces et dépenses</h2>
+    <div class="grid">
+      <label>Loyalty (HTG)${inp("loyalty",S.loyalty,{num:1,ph:"0"})}</label>
+      <label>Compensation client (HTG)${inp("comp.montant",S.comp.montant,{num:1,ph:"0"})}</label>
+    </div>
+    ${num(S.comp.montant)>0?`<label>Client et motif de la compensation${inp("comp.motif",S.comp.motif)}</label>`:""}
+    ${list(S.dep,"dep",[{k:"lib",lab:"Dépense",ph:"Nature"},{k:"montant",lab:"Montant",num:1},{k:"bon",lab:"N° du bon",ph:"Bon signé"}])}
+    <button type="button" class="add" data-add="dep">+ Ajouter une dépense</button>
+    ${list(S.cashout,"cashout",[{k:"nom",lab:"Cash out payé à",ph:"Nom"},{k:"montant",lab:"Montant",num:1},{k:"bon",lab:"N° du bon",ph:"Bon signé"}])}
+    <button type="button" class="add" data-add="cashout">+ Ajouter un cash out payé au point</button>
+  </section>
+
+  <section class="card"><h2><span class="n">7</span>Caisse</h2>
+    <div class="totals" data-out="totals"></div>
+    <div class="grid"><label>Encaisse remise (HTG)${inp("remis",S.remis,{num:1})}</label><label>Écart<div class="calc" data-out="ecart">—</div></label></div>
+  </section>
+
+  <section class="card" id="ctrl"><h2><span class="n">8</span>Contrôle et envoi</h2>
+    <ul class="checks" data-out="checks"></ul>
+    <label>Commentaire <span data-out="commentReq" style="text-transform:none;letter-spacing:0"></span><textarea data-k="comment" id="i-comment" placeholder="Expliquez ici toute alerte (prix différent, écart, lecture de jauge…)">${esc(S.comment)}</textarea></label>
+    <div class="actions">
+      <button type="button" class="btn" id="send" hidden>Enregistrer le rapport</button>
+      <button type="button" class="btn" id="copy">Copier le texte WhatsApp</button>
+      <button type="button" class="btn sec" id="reset">Nouveau rapport</button>
+    </div>
+    <div class="msg" data-out="msg" hidden></div>
+    <pre class="wa" data-out="wa"></pre>
+  </section>`;
+  update();
+}
+
+/* ---------- Mise à jour des sorties ---------- */
+let lastK={E:[],W:[],O:[]};
+function out(n){return document.querySelector(`[data-out="${n}"]`);}
+function update(){
+  const c=calc(); const k=checks(c); lastK=k;
+  const set=(n,v)=>{const el=out(n);if(el)el.textContent=v;};
+  set("sortie",ok(c.sortie)?fmt(c.sortie):"—");
+  c.lines.forEach((l,i)=>set("line"+i,fmt(l.total)));
+  set("eau",fmt(c.eau));set("eauRest",ok(c.eauRest)?String(c.eauRest):"—");set("ventes",fmt(c.ventes)+" HTG");
+  const pi=out("prevInfo"); if(pi){pi.textContent=prev?`Dernier rapport enregistré : ${prev.form.date}, fermeture ${fmt(num(prev.form.meterClose))}, jauge fin ${prev.form.j?.c1f??"—"} %${c.two?" / C2 "+(prev.form.j?.c2f??"—")+" %":""}.`:(S.site&&db?"Aucun rapport précédent enregistré pour ce point.":"");}
+  const t=out("totals"); if(t){const rows=[["Total ventes",c.ventes,1],["+ Recouvrements en espèces",c.recEsp],["− Crédits",c.credits],["− Loyalty",c.loyalty],["− Compensation",c.comp],["− Carburant véhicule 30 Minutes",c.carb],["− Dépenses",c.dep],["− Cash out",c.cashout]].filter(r=>r[2]||r[1]);
+    t.innerHTML=rows.map(r=>`<span>${r[0]}</span><span class="v">${fmt(r[1])}</span>`).join("")+`<span class="big">Encaisse attendue</span><span class="v big">${fmt(c.attendu)}</span>`+(c.recAut?`<span class="hint">Recouvrements par chèque/virement (hors caisse)</span><span class="v hint">${fmt(c.recAut)}</span>`:"");}
+  const ec=out("ecart"); if(ec){ec.textContent=ok(c.ecart)?fmt(c.ecart)+" HTG":"—";ec.style.color=!ok(c.ecart)?"":Math.abs(c.ecart)>TOL_CAISSE?"var(--err)":"var(--ok)";}
+  const ul=out("checks"); if(ul){ul.innerHTML=k.E.map(m=>`<li class="c-err"><b>ERREUR</b><span>${esc(m)}</span></li>`).join("")+k.W.map(m=>`<li class="c-warn"><b>ALERTE</b><span>${esc(m)}</span></li>`).join("")+k.O.map(m=>`<li class="c-ok"><b>OK</b><span>${esc(m)}</span></li>`).join("");}
+  const needC=k.W.length>0 && S.comment.trim().length<10;
+  set("commentReq",k.W.length?"(obligatoire : "+k.W.length+" alerte"+(k.W.length>1?"s":"")+")":"(facultatif)");
+  const wa=out("wa"); if(wa)wa.textContent=waText(c,k);
+  const send=$("#send"); if(send){send.disabled=saving||k.E.length>0||needC||!db; send.textContent=!db?"Enregistrement indisponible":sameDay?"Enregistrer la correction":"Enregistrer le rapport";
+    send.title=k.E.length?"Corrigez les erreurs d'abord":needC?"Expliquez les alertes dans le commentaire":"";}
+  const pe=$("#pEcart"); pe.textContent="Écart "+(ok(c.ecart)?fmt(c.ecart):"—"); pe.className="pill "+(!ok(c.ecart)?"":Math.abs(c.ecart)>TOL_CAISSE?"err":"ok");
+  const pc=$("#pChecks"); pc.textContent=k.E.length?k.E.length+" erreur(s)":k.W.length?k.W.length+" alerte(s)":"Tout est OK"; pc.className="pill "+(k.E.length?"err":k.W.length?"warn":"ok");
+}
+
+/* ---------- Événements ---------- */
+function setPath(path,val){const parts=path.split(".");let o=S;for(let i=0;i<parts.length-1;i++)o=o[parts[i]];o[parts[parts.length-1]]=val;}
+const STRUCT=/^(site|liv\.on|eau\.on|liv\.citerne|lines\.\d+\.cat|comp\.montant)$/;
+$("#f").addEventListener("input",ev=>{const el=ev.target;const k=el.dataset.k;if(!k)return;
+  const v=el.type==="checkbox"?el.checked:el.value;
+  if(/^lines\.\d+\.cat$/.test(k)){const i=+k.split(".")[1];const old=S.lines[i];const oldRef=String(catPrice(old.cat,S.site));setPath(k,v);if(!old.prix||old.prix===oldRef)old.prix=String(catPrice(v,S.site));}
+  else if(k==="date"){withAutoPrices(()=>setPath(k,v));renderForm();refocus(k);lookup();return;}
+  else setPath(k,v);
+  if(k==="site"){S.liv.fournisseur=SITES[v]?SITES[v].supplier:"Wingaz";
+    const untouched=S.lines.every(l=>!String(l.gal).trim());
+    if(untouched)S.lines=defaultLines(v);else S.lines.forEach(l=>{l.prix=String(catPrice(l.cat,v));});
+    S.eau.on=!!(SITES[v]&&SITES[v].water);}
+  if(k==="site"||k==="vendeur"||k==="pompiste")store("rmc_prefs",{site:S.site,vendeur:S.vendeur,pompiste:S.pompiste});
+  if(k==="site"||k==="date")lookup();
+  if(k==="comp.montant"){const has=!!document.getElementById("i-comp-motif");if(has!==(num(v)>0)){renderForm();refocus(k);return;}}
+  if(STRUCT.test(k)&&k!=="comp.montant"){renderForm();refocus(k);return;}
+  update();
+});
+function refocus(k){const el=document.getElementById("i-"+k.replace(/\./g,"-"));if(el){el.focus();if(el.setSelectionRange&&el.type==="text")try{el.setSelectionRange(el.value.length,el.value.length);}catch(e){}}}
+$("#f").addEventListener("click",ev=>{const a=ev.target.closest("[data-add]"),d=ev.target.closest("[data-del]");
+  if(a){const key=a.dataset.add;const blankItem={lines:{cat:"Sur place",client:"",gal:"",prix:String(catPrice("Sur place",S.site))},credits:{client:"",montant:""},recouv:{client:"",montant:"",mode:"Espèces"},dep:{lib:"",montant:"",bon:""},cashout:{nom:"",montant:"",bon:""}}[key];
+    S[key].push(blankItem);renderForm();const n=S[key].length-1;refocus(`${key}.${n}.${key==="lines"?"gal":key==="dep"?"lib":key==="cashout"?"nom":"client"}`);}
+  if(d){const [key,i]=d.dataset.del.split(".");S[key].splice(+i,1);renderForm();}
+  if(ev.target.id==="copy")copyWA();
+  if(ev.target.id==="send")save();
+  if(ev.target.id==="reset"){S=blank({site:S.site,vendeur:S.vendeur,pompiste:S.pompiste});prev=null;sameDay=null;renderForm();lookup();window.scrollTo({top:0});}
+});
+$("#goCheck").addEventListener("click",()=>{if(view!=="form")showView("form");const c=document.getElementById("ctrl");if(c)c.scrollIntoView({behavior:"smooth",block:"start"});});
+function saveLocal(){const c=calc(),k=checks(c);if(k.E.length||!S.site)return false;
+  const list=localList().filter(d=>!(d.date===S.date&&d.site===S.site));
+  list.push({date:S.date,site:S.site,siteName:c.site.name,vendeur:S.vendeur.trim(),version:(sameDay&&sameDay.version?sameDay.version:0)+1,submittedAt:new Date().toISOString(),form:JSON.parse(JSON.stringify(S)),calc:{sortie:c.sortie,ventes:c.ventes,ecart:c.ecart},nbAlertes:k.W.length});
+  list.sort((a,b)=>a.date.localeCompare(b.date));store("rmc_local",list.slice(-60));sameDay=list.find(d=>d.date===S.date&&d.site===S.site)||null;histDocs=localList();return true;}
+function copyWA(){if(!db)saveLocal();const t=out("wa").textContent;const m=out("msg");
+  const done=okk=>{m.hidden=false;m.className="msg "+(okk?"c-ok":"c-warn");m.textContent=okk?"Texte copié : collez-le dans le groupe WhatsApp.":"Copie automatique impossible : sélectionnez le texte ci-dessous et copiez-le.";};
+  try{navigator.clipboard.writeText(t).then(()=>done(true),()=>{selectWA();done(false);});}catch(e){selectWA();done(false);}}
+function selectWA(){const el=out("wa");const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
+
+/* ---------- Base partagée ---------- */
+let lookTimer=null;
+function localList(){const a=load("rmc_local");return Array.isArray(a)?a:[];}
+function lookup(){clearTimeout(lookTimer);prev=null;sameDay=null;if(!S.site||!S.date){update();return;}
+  if(!db){const docs=localList().filter(d=>d.site===S.site).sort((a,b)=>b.date.localeCompare(a.date));sameDay=docs.find(d=>d.date===S.date)||null;prev=docs.find(d=>d.date<S.date&&d.form)||null;update();return;}
+  const site=S.site,date=S.date;
+  lookTimer=setTimeout(async()=>{try{const q=await db.collection("rapports").where("site","==",site).orderBy("date","desc").limit(15).get();
+      if(site!==S.site||date!==S.date)return;
+      const docs=q.docs.map(d=>d.data()).filter(Boolean);
+      sameDay=docs.find(d=>d.date===date)||null; prev=docs.find(d=>d.date<date&&d.form)||null; update();
+    }catch(e){update();}},250);}
+async function save(){const c=calc(),k=checks(c);if(k.E.length||!db||saving)return;
+  if(k.W.length&&S.comment.trim().length<10)return;
+  saving=true;update();const m=out("msg");
+  const id=`${S.date}_${S.site}`;
+  const payload={date:S.date,site:S.site,siteName:c.site.name,vendeur:S.vendeur.trim(),version:(sameDay&&sameDay.version?sameDay.version:0)+1,
+    submittedAt:new Date().toISOString(),submittedBy:me||null,
+    form:JSON.parse(JSON.stringify(S)),
+    calc:{sortie:c.sortie,linesGal:c.linesGal,ventes:c.ventes,propane:c.propane,eau:c.eau,acc:c.acc,recEsp:c.recEsp,recAutres:c.recAut,credits:c.credits,loyalty:c.loyalty,compensation:c.comp,carburant30M:c.carb,depenses:c.dep,cashout:c.cashout,attendu:c.attendu,remis:c.remis,ecart:c.ecart,stockFinGal:c.stockGal,joursStock:c.jours,livraisonGal:c.livGal},
+    alertes:k.W,nbAlertes:k.W.length,whatsapp:waText(c,k)};
+  try{await db.collection("rapports").doc(id).set(payload);sameDay=payload;
+    m.hidden=false;m.className="msg c-ok";m.textContent=`Rapport enregistré (version ${payload.version}). Copiez maintenant le texte WhatsApp pour le groupe.`;
+  }catch(e){m.hidden=false;m.className="msg c-err";
+    m.textContent=e&&e.code==="invalid_argument"?"Votre accès ne permet pas d'enregistrer. Demandez à la direction l'accès « Contributeur », et envoyez le texte WhatsApp en attendant.":e&&e.code==="quota_exceeded"?"La base est pleine. Prévenez la direction et envoyez le texte WhatsApp.":"Enregistrement impossible pour le moment. Réessayez dans un instant ou envoyez le texte WhatsApp.";}
+  saving=false;update();}
+
+/* ---------- Historique ---------- */
+let histDocs=[],histUnsub=null;
+$("#hSite").innerHTML=`<option value="">Tous les points</option>`+Object.keys(SITES).map(k=>`<option value="${k}">${esc(SITES[k].name)}</option>`).join("");
+$("#hSite").addEventListener("change",renderHist);
+$("#hRefresh").addEventListener("click",subscribeHist);
+function subscribeHist(){if(!db){histDocs=localList();histUnsub=()=>{};renderHist();return;}
+  if(histUnsub)histUnsub();
+  histUnsub=db.collection("rapports").orderBy("submittedAt","desc").limit(80).onSnapshot(s=>{histDocs=s.docs.map(d=>d.data()).filter(Boolean);renderHist();},()=>{$("#hist").innerHTML='<div class="empty">Impossible de charger l\'historique.</div>';});}
+function renderHist(){const f=$("#hSite").value;const rows=histDocs.filter(d=>!f||d.site===f).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(a.site||"").localeCompare(b.site||""));
+  if(!rows.length){$("#hist").innerHTML='<div class="empty">Aucun rapport gardé sur ce téléphone pour l\'instant. Ils apparaissent ici après « Copier le texte WhatsApp ».</div>';return;}
+  $("#hist").innerHTML=rows.map(d=>{const c=d.calc||{};const e=c.ecart;const cls=!ok(e)?"":Math.abs(e)>TOL_CAISSE?"err":"ok";
+    return `<button type="button" class="hrow" data-id="${esc(d.date+"_"+d.site)}"><span class="t">${esc(d.siteName||d.site)} · ${esc(d.date)}</span><span class="r"><span class="pill ${cls}">Écart ${fmt(e)}</span></span>
+      <span class="m">${fmt(c.sortie)} gal · ${fmt0(c.ventes)} HTG · ${esc(d.vendeur||"")}</span><span class="m r">${d.nbAlertes?`<span class="pill warn">${d.nbAlertes} alerte(s)</span>`:'<span class="pill ok">OK</span>'} v${d.version||1}</span></button>`;}).join("");}
+$("#hist").addEventListener("click",ev=>{const b=ev.target.closest(".hrow");if(!b)return;const d=histDocs.find(x=>x.date+"_"+x.site===b.dataset.id);if(!d||!d.form)return;
+  S=Object.assign(blank(),JSON.parse(JSON.stringify(d.form)));showView("form");renderForm();lookup();window.scrollTo({top:0});});
+
+function showView(v){view=v;$("#view-form").hidden=v!=="form";$("#view-hist").hidden=v!=="hist";$("#view-prix").hidden=v!=="prix";
+  $("#tab-form").setAttribute("aria-selected",v==="form");$("#tab-hist").setAttribute("aria-selected",v==="hist");$("#tab-prix").setAttribute("aria-selected",v==="prix");
+  $("#bar").hidden=v!=="form"; if(v==="prix")renderPrix();
+  if(v==="hist"&&!histUnsub)subscribeHist();}
+$("#tab-form").addEventListener("click",()=>showView("form"));
+$("#tab-hist").addEventListener("click",()=>showView("hist"));
+$("#tab-prix").addEventListener("click",()=>showView("prix"));
+
+/* ---------- Prix ---------- */
+let canEditPrix=false, prixDocVersion=null;
+const PFIELDS=[...Object.keys(SITES).map(k=>({k:"site."+k,lab:SITES[k].name+" (sur place)"})),{k:"tap",lab:"Tap-tap"},{k:"pyro",lab:"Pyrogaz"},{k:"livr",lab:"Livraison client"},{k:"eau",lab:"Eau Culligan (gallon)"}];
+function pGet(P,k){return k.startsWith("site.")?(P.sites||{})[k.slice(5)]:P[k];}
+function renderPrix(){const P=priceFor(todayISO());
+  $("#prixNow").innerHTML=PFIELDS.map(f=>`<span>${esc(f.lab)}</span><span class="v">${fmt0(pGet(P,f.k))} HTG</span>`).join("");
+  $("#prixInfo").textContent="Prix de ce fichier (version du 17/10/2026 : nouveaux prix depuis le 16/10). Si les prix changent, la direction vous enverra un nouveau fichier.";
+  if(!$("#pFrom").value)$("#pFrom").value=todayISO();
+  if(!$("#pFields").dataset.filled){$("#pFields").innerHTML=PFIELDS.map(f=>`<label>${esc(f.lab)}<input class="num" inputmode="decimal" data-pk="${f.k}" value="${esc(pGet(P,f.k))}"></label>`).join("");$("#pFields").dataset.filled="1";}
+  const ed=canEditPrix&&!!db;
+  $("#pFields").querySelectorAll("input").forEach(i=>i.disabled=!ed);$("#pFrom").disabled=!ed;$("#pSave").disabled=!ed;
+  $("#prixWho").textContent=ed?"Les nouveaux prix s'appliquent aux rapports datés à partir du jour choisi. Les rapports plus anciens gardent les prix de leur date.":"Seule la direction peut changer les prix. Les prix ci-dessus sont appliqués automatiquement dans le formulaire.";
+  const hs=priceSets.filter(x=>x.from!=="2000-01-01").slice().sort((a,b)=>b.from.localeCompare(a.from));
+  $("#prixHist").innerHTML=hs.length?hs.map(x=>`<div class="hrow" style="cursor:default"><span class="t">À partir du ${esc(x.from)}</span><span class="m r">${esc(x.updatedAt?x.updatedAt.slice(0,10):"")}</span><span class="m" style="grid-column:1/-1">${PFIELDS.map(f=>esc(f.lab.replace(" (sur place)",""))+" "+fmt0(pGet(x,f.k))).join(" · ")}</span></div>`).join(""):'<div class="empty">Aucun changement de prix enregistré.</div>';}
+$("#pSave").addEventListener("click",async()=>{const m=$("#pMsg");const from=$("#pFrom").value;
+  if(!from){m.hidden=false;m.className="msg c-err";m.textContent="Choisissez la date d'entrée en vigueur.";return;}
+  const set={from,sites:{},updatedAt:new Date().toISOString(),updatedBy:me||null};let bad=false;
+  $("#pFields").querySelectorAll("input").forEach(i=>{const v=num(i.value);if(!ok(v)||v<=0)bad=true;const k=i.dataset.pk;if(k.startsWith("site."))set.sites[k.slice(5)]=v;else set[k]=v;});
+  if(bad){m.hidden=false;m.className="msg c-err";m.textContent="Chaque prix doit être un nombre positif.";return;}
+  const sets=priceSets.filter(x=>x.from!=="2000-01-01"&&x.from!==from).concat([set]).sort((a,b)=>a.from.localeCompare(b.from)).slice(-40);
+  $("#pSave").disabled=true;
+  try{await db.doc("config/prix").set({sets,updatedAt:set.updatedAt});m.hidden=false;m.className="msg c-ok";m.textContent=`Nouveaux prix enregistrés à partir du ${from}. Ils s'appliquent tout de suite dans le formulaire de tous les points.`;$("#pFields").dataset.filled="";}
+  catch(e){m.hidden=false;m.className="msg c-err";m.textContent=e&&e.code==="invalid_argument"?"Votre accès ne permet pas de changer les prix.":"Enregistrement impossible pour le moment. Réessayez.";}
+  renderPrix();});
+function subscribePrix(){if(!db)return;db.doc("config/prix").onSnapshot(snap=>{const d=snap.exists?snap.data():null;
+    const sets=d&&Array.isArray(d.sets)?d.sets.filter(x=>x&&x.from):[];
+    withAutoPrices(()=>{const m={};BUILTIN_SETS.concat(sets).forEach(x=>{m[x.from]=x;});priceSets=[PRICE_DEFAULT].concat(Object.values(m));});
+    if(view==="form"){const a=document.activeElement&&document.activeElement.id;renderForm();if(a){const el=document.getElementById(a);if(el)el.focus();}}
+    if(view==="prix"){$("#pFields").dataset.filled="";renderPrix();}},()=>{});}
+
+/* ---------- Démarrage ---------- */
+renderForm();
+(async()=>{
+  db=null; subscribePrix(); lookup(); update(); if(view==="prix")renderPrix();
+})();
+})();
+</script>
+</body></html>
