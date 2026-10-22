@@ -93,7 +93,7 @@ pre.wa{white-space:pre-wrap;word-break:break-word;font-family:var(--f-num);font-
     <button class="tab" id="tab-hist" role="tab" aria-selected="false">Mes rapports</button>
     <button class="tab" id="tab-prix" role="tab" aria-selected="false">Prix</button>
   </div>
-  <div id="dbBanner" class="banner">Version téléphone du 17/10/2026 (prix du 16/10 : 350 HTG, tap-tap 325, livraison client 375, Pyrogaz 350). Remplissez le rapport, corrigez les erreurs, puis appuyez sur « Copier le texte WhatsApp » et collez-le dans le groupe. Le téléphone garde vos derniers rapports pour contrôler l'ouverture du lendemain.</div>
+  <div id="dbBanner" class="banner">Version téléphone du 22/10/2026 (prix du 16/10 : 350 HTG, tap-tap 325, livraison client 375, Pyrogaz 350). Remplissez le rapport, corrigez les erreurs, puis appuyez sur « Copier le texte WhatsApp » et collez-le dans le groupe. Le téléphone garde vos derniers rapports pour contrôler l'ouverture du lendemain.</div>
 
   <div id="view-form">
     <form id="f" autocomplete="off" novalidate></form>
@@ -162,14 +162,20 @@ function withAutoPrices(fn){const before=S.lines.map(l=>String(catPrice(l.cat,S.
 /* ---------- Outils ---------- */
 const $=s=>document.querySelector(s);
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-function num(v){if(v==null)return NaN;let s=String(v).trim().replace(/\s/g,"");if(!s)return NaN;
-  if(s.includes(",")&&s.includes("."))s=s.replace(/,/g,"");else s=s.replace(",",".");
+function num(v){if(v==null)return NaN;
+  /* Tolère : tirets ou texte devant (« —95000 »), unités derrière (« HTG », « gal », « % »), espaces de milliers. */
+  let s=String(v).replace(/[\s  ]/g,"").replace(/^[^\d.,]+/,"").replace(/[^\d.,]+$/,"");if(!s||/[^\d.,]/.test(s))return NaN;
+  if(s.includes(",")&&s.includes(".")){const dec=s.lastIndexOf(",")>s.lastIndexOf(".")?",":".";s=s.split(dec==="."?",":".").join("");if(dec===",")s=s.replace(",",".");}
+  else if(s.includes(",")){s=/^\d{1,3}(,\d{3})+$/.test(s)?s.replace(/,/g,""):s.replace(",",".");}  /* 95,000 = 95 000 ; 811,89 = 811.89 */
+  else if(/^\d{1,3}(\.\d{3}){2,}$/.test(s))s=s.replace(/\./g,"");                                /* 1.250.000 */
+  if((s.match(/\./g)||[]).length>1)return NaN;
   const n=Number(s);return isFinite(n)?n:NaN;}
 const r2=n=>Math.round(n*100)/100;
 const ok=n=>!isNaN(n);
 const z=n=>ok(n)?n:0;
 function fmt(n){if(!ok(n))return "—";return n.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/[  ]/g," ");}
 function fmt0(n){if(!ok(n))return "—";return Math.round(n).toLocaleString("fr-FR").replace(/[  ]/g," ");}
+function dayGap(a,b){try{return Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000);}catch(e){return NaN;}}
 function todayISO(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
 function dateLabel(iso){try{return new Date(iso+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});}catch(e){return iso;}}
 function store(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -223,7 +229,7 @@ function calc(){
 
 /* ---------- Contrôles ---------- */
 function checks(c){
-  const E=[],W=[],O=[]; const e=m=>E.push(m), w=m=>W.push(m), o=m=>O.push(m);
+  const E=[],W=[],O=[],I=[]; const e=m=>E.push(m), w=m=>W.push(m), o=m=>O.push(m), i=m=>I.push(m);
   if(!S.site)e("Choisissez le point de vente.");
   if(!S.date)e("Indiquez la date du rapport.");
   else if(S.date>todayISO())e("La date du rapport est dans le futur.");
@@ -262,12 +268,20 @@ function checks(c){
     else o("Jauge cohérente avec le compteur.");}
   // Ouverture vs veille
   if(prev&&ok(c.open)){const pc=num(prev.form.meterClose);
-    if(ok(pc)&&Math.abs(pc-c.open)>0.01)w(`Ouverture ${fmt(c.open)} ≠ fermeture du ${prev.form.date} (${fmt(pc)}). Écart ${fmt(c.open-pc)} gal pendant la nuit.`);
-    else if(ok(pc))o(`Ouverture = fermeture du ${prev.form.date}.`);
+    const gap=dayGap(prev.form.date,S.date);
     const pj=prev.form.j||{}; const pairs=c.two?[["c1d","c1f","C1"],["c2d","c2f","C2"]]:[["c1d","c1f",""]];
-    pairs.forEach(([d,f,lab])=>{const pf=num(pj[f]);
-      if(ok(pf)&&ok(c.J[d])&&Math.abs(pf-c.J[d])>3)w(`Jauge début${lab?" "+lab:""} ${c.J[d]} % alors qu'elle était à ${pf} % à la fermeture du ${prev.form.date}. Valeur recopiée ?`);});
-  } else if(S.site&&!prev&&db)o("Pas de rapport précédent enregistré pour ce point : le contrôle d'ouverture n'est pas possible.");
+    const meterDiff=ok(pc)&&Math.abs(pc-c.open)>0.01;
+    const jaugeDiff=pairs.some(([d,f])=>{const pf=num(pj[f]);return ok(pf)&&ok(c.J[d])&&Math.abs(pf-c.J[d])>3;});
+    if(gap>1&&(meterDiff||jaugeDiff)){
+      /* Rapports intermédiaires non enregistrés : la comparaison avec un vieux rapport n'a pas de sens. */
+      i(`Dernier rapport enregistré pour ce point : ${prev.form.date} (${gap} jours). Les rapports intermédiaires n'ont pas été enregistrés, le contrôle d'ouverture n'est pas possible aujourd'hui.`);
+    } else {
+      if(meterDiff)w(`Ouverture ${fmt(c.open)} ≠ fermeture du ${prev.form.date} (${fmt(pc)}). Écart ${fmt(c.open-pc)} gal pendant la nuit.`);
+      else if(ok(pc))o(`Ouverture = fermeture du ${prev.form.date}.`);
+      pairs.forEach(([d,f,lab])=>{const pf=num(pj[f]);
+        if(ok(pf)&&ok(c.J[d])&&Math.abs(pf-c.J[d])>3)w(`Jauge début${lab?" "+lab:""} ${c.J[d]} % alors qu'elle était à ${pf} % à la fermeture du ${prev.form.date}. Livraison non déclarée ou valeur recopiée ?`);});
+    }
+  } else if(S.site&&!prev)o("Pas de rapport précédent enregistré pour ce point : le contrôle d'ouverture n'est pas possible.");
   // Livraison
   if(S.liv.on){const L=S.liv, pay=num(L.pay), rem=z(num(L.rem)), jav=num(L.jAv), jap=num(L.jAp), mav=num(L.mAv), map=num(L.mAp);
     if(!L.bl.trim())e("Livraison : numéro de BL manquant.");
@@ -289,7 +303,7 @@ function checks(c){
   }
   if(ok(c.jours)&&c.jours<3)w(`Stock de fin ≈ ${fmt0(c.stockGal)} gal, soit ${c.jours.toFixed(1)} jours de vente : signalez-le pour commande.`);
   if(sameDay)o(`Un rapport existe déjà pour ce point et cette date (version ${sameDay.version||1}). L'envoi le remplacera par une version corrigée.`);
-  return {E,W,O};
+  return {E,W,O,I};
 }
 
 /* ---------- Texte WhatsApp ---------- */
@@ -320,7 +334,9 @@ function waText(c,k){
   S.cashout.forEach(x=>p(`Cash out ${x.nom||"—"} : ${fmt(num(x.montant))} (bon ${x.bon||"—"})`));
   p("");p("— CAISSE —");p(`Encaisse attendue : ${fmt(c.attendu)} HTG`);p(`Encaisse remise : ${fmt(c.remis)} HTG`);p(`Écart : ${fmt(c.ecart)} HTG`);
   p("");p(`— CONTRÔLE — ${k.E.length?"❌ "+k.E.length+" erreur(s)":k.W.length?"⚠️ "+k.W.length+" alerte(s)":"✅ aucun écart"}`);
+  k.E.forEach(x=>p("❌ "+x));
   k.W.forEach(x=>p("⚠️ "+x));
+  (k.I||[]).forEach(x=>p("ℹ️ "+x));
   if(S.comment.trim()){p("");p("Commentaire : "+S.comment.trim());}
   return L.join("\n");
 }
@@ -435,7 +451,7 @@ function renderForm(){
 }
 
 /* ---------- Mise à jour des sorties ---------- */
-let lastK={E:[],W:[],O:[]};
+let lastK={E:[],W:[],O:[],I:[]};
 function out(n){return document.querySelector(`[data-out="${n}"]`);}
 function update(){
   const c=calc(); const k=checks(c); lastK=k;
@@ -447,7 +463,7 @@ function update(){
   const t=out("totals"); if(t){const rows=[["Total ventes",c.ventes,1],["+ Recouvrements en espèces",c.recEsp],["− Crédits",c.credits],["− Loyalty",c.loyalty],["− Compensation",c.comp],["− Carburant véhicule 30 Minutes",c.carb],["− Dépenses",c.dep],["− Cash out",c.cashout]].filter(r=>r[2]||r[1]);
     t.innerHTML=rows.map(r=>`<span>${r[0]}</span><span class="v">${fmt(r[1])}</span>`).join("")+`<span class="big">Encaisse attendue</span><span class="v big">${fmt(c.attendu)}</span>`+(c.recAut?`<span class="hint">Recouvrements par chèque/virement (hors caisse)</span><span class="v hint">${fmt(c.recAut)}</span>`:"");}
   const ec=out("ecart"); if(ec){ec.textContent=ok(c.ecart)?fmt(c.ecart)+" HTG":"—";ec.style.color=!ok(c.ecart)?"":Math.abs(c.ecart)>TOL_CAISSE?"var(--err)":"var(--ok)";}
-  const ul=out("checks"); if(ul){ul.innerHTML=k.E.map(m=>`<li class="c-err"><b>ERREUR</b><span>${esc(m)}</span></li>`).join("")+k.W.map(m=>`<li class="c-warn"><b>ALERTE</b><span>${esc(m)}</span></li>`).join("")+k.O.map(m=>`<li class="c-ok"><b>OK</b><span>${esc(m)}</span></li>`).join("");}
+  const ul=out("checks"); if(ul){ul.innerHTML=k.E.map(m=>`<li class="c-err"><b>ERREUR</b><span>${esc(m)}</span></li>`).join("")+k.W.map(m=>`<li class="c-warn"><b>ALERTE</b><span>${esc(m)}</span></li>`).join("")+(k.I||[]).map(m=>`<li class="c-ok"><b>INFO</b><span>${esc(m)}</span></li>`).join("")+k.O.map(m=>`<li class="c-ok"><b>OK</b><span>${esc(m)}</span></li>`).join("");}
   const needC=k.W.length>0 && S.comment.trim().length<10;
   set("commentReq",k.W.length?"(obligatoire : "+k.W.length+" alerte"+(k.W.length>1?"s":"")+")":"(facultatif)");
   const wa=out("wa"); if(wa)wa.textContent=waText(c,k);
@@ -485,9 +501,9 @@ $("#f").addEventListener("click",ev=>{const a=ev.target.closest("[data-add]"),d=
   if(ev.target.id==="reset"){S=blank({site:S.site,vendeur:S.vendeur,pompiste:S.pompiste});prev=null;sameDay=null;renderForm();lookup();window.scrollTo({top:0});}
 });
 $("#goCheck").addEventListener("click",()=>{if(view!=="form")showView("form");const c=document.getElementById("ctrl");if(c)c.scrollIntoView({behavior:"smooth",block:"start"});});
-function saveLocal(){const c=calc(),k=checks(c);if(k.E.length||!S.site)return false;
+function saveLocal(){const c=calc(),k=checks(c);if(!S.site||!S.date||!ok(c.close))return false;
   const list=localList().filter(d=>!(d.date===S.date&&d.site===S.site));
-  list.push({date:S.date,site:S.site,siteName:c.site.name,vendeur:S.vendeur.trim(),version:(sameDay&&sameDay.version?sameDay.version:0)+1,submittedAt:new Date().toISOString(),form:JSON.parse(JSON.stringify(S)),calc:{sortie:c.sortie,ventes:c.ventes,ecart:c.ecart},nbAlertes:k.W.length});
+  list.push({date:S.date,site:S.site,siteName:c.site.name,vendeur:S.vendeur.trim(),version:(sameDay&&sameDay.version?sameDay.version:0)+1,submittedAt:new Date().toISOString(),form:JSON.parse(JSON.stringify(S)),calc:{sortie:c.sortie,ventes:c.ventes,ecart:c.ecart},nbAlertes:k.W.length,nbErreurs:k.E.length});
   list.sort((a,b)=>a.date.localeCompare(b.date));store("rmc_local",list.slice(-60));sameDay=list.find(d=>d.date===S.date&&d.site===S.site)||null;histDocs=localList();return true;}
 function copyWA(){if(!db)saveLocal();const t=out("wa").textContent;const m=out("msg");
   const done=okk=>{m.hidden=false;m.className="msg "+(okk?"c-ok":"c-warn");m.textContent=okk?"Texte copié : collez-le dans le groupe WhatsApp.":"Copie automatique impossible : sélectionnez le texte ci-dessous et copiez-le.";};
